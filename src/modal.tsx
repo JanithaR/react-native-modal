@@ -3,9 +3,11 @@ import {
   Animated,
   DeviceEventEmitter,
   Dimensions,
+  InteractionManager,
   KeyboardAvoidingView,
   Modal,
   PanResponder,
+  BackHandler,
   PanResponderGestureState,
   PanResponderInstance,
   Platform,
@@ -78,6 +80,7 @@ export interface ModalProps extends ViewProps {
   backdropTransitionOutTiming: number;
   customBackdrop: React.ReactNode;
   useNativeDriver: boolean;
+  useNativeDriverForBackdrop?: boolean;
   deviceHeight: number;
   deviceWidth: number;
   hideModalContentWhileAnimating: boolean;
@@ -139,6 +142,7 @@ export class ReactNativeModal extends React.Component<ModalProps, State> {
       PropTypes.oneOf(['up', 'down', 'left', 'right']),
     ]),
     useNativeDriver: PropTypes.bool,
+    useNativeDriverForBackdrop: PropTypes.bool,
     style: PropTypes.any,
     scrollTo: PropTypes.func,
     scrollOffset: PropTypes.number,
@@ -197,8 +201,8 @@ export class ReactNativeModal extends React.Component<ModalProps, State> {
   state: State = {
     showContent: true,
     isVisible: false,
-    deviceWidth: Dimensions.get('screen').width,
-    deviceHeight: Dimensions.get('screen').height,
+    deviceWidth: Dimensions.get('window').width,
+    deviceHeight: Dimensions.get('window').height,
     isSwipeable: !!this.props.swipeDirection,
     pan: null,
   };
@@ -258,9 +262,11 @@ export class ReactNativeModal extends React.Component<ModalProps, State> {
     if (this.state.isVisible) {
       this.open();
     }
+    BackHandler.addEventListener('hardwareBackPress', this.onBackButtonPress);
   }
 
   componentWillUnmount() {
+    BackHandler.removeEventListener('hardwareBackPress', this.onBackButtonPress);
     DeviceEventEmitter.removeListener(
       'didUpdateDimensions',
       this.handleDimensionsUpdate,
@@ -300,6 +306,13 @@ export class ReactNativeModal extends React.Component<ModalProps, State> {
   }
   getDeviceHeight = () => this.props.deviceHeight || this.state.deviceHeight;
   getDeviceWidth = () => this.props.deviceWidth || this.state.deviceWidth;
+  onBackButtonPress = () => {
+    if (this.props.onBackButtonPress && this.props.isVisible) {
+      this.props.onBackButtonPress()
+      return true
+    }
+    return false
+  }  
   buildPanResponder = () => {
     let animEvt: OrNull<AnimationEvent> = null;
 
@@ -552,8 +565,8 @@ export class ReactNativeModal extends React.Component<ModalProps, State> {
     if (!this.props.deviceHeight && !this.props.deviceWidth) {
       // Here we update the device dimensions in the state if the layout changed
       // (triggering a render)
-      const deviceWidth = Dimensions.get('screen').width;
-      const deviceHeight = Dimensions.get('screen').height;
+      const deviceWidth = Dimensions.get('window').width;
+      const deviceHeight = Dimensions.get('window').height;
       if (
         deviceWidth !== this.state.deviceWidth ||
         deviceHeight !== this.state.deviceHeight
@@ -584,10 +597,12 @@ export class ReactNativeModal extends React.Component<ModalProps, State> {
 
     if (this.contentRef) {
       this.props.onModalWillShow && this.props.onModalWillShow();
+      const interactionHandle = InteractionManager.createInteractionHandle();
       this.contentRef
         .animate(this.animationIn, this.props.animationInTiming)
         .then(() => {
           this.isTransitioning = false;
+          InteractionManager.clearInteractionHandle(interactionHandle);
           if (!this.props.isVisible) {
             this.close();
           } else {
@@ -626,10 +641,12 @@ export class ReactNativeModal extends React.Component<ModalProps, State> {
 
     if (this.contentRef) {
       this.props.onModalWillHide && this.props.onModalWillHide();
+      const interactionHandle = InteractionManager.createInteractionHandle();
       this.contentRef
         .animate(animationOut, this.props.animationOutTiming)
         .then(() => {
           this.isTransitioning = false;
+          InteractionManager.clearInteractionHandle(interactionHandle);
           if (this.props.isVisible) {
             this.open();
           } else {
@@ -668,6 +685,7 @@ export class ReactNativeModal extends React.Component<ModalProps, State> {
       customBackdrop,
       backdropColor,
       useNativeDriver,
+      useNativeDriverForBackdrop,
       onBackdropPress,
     } = this.props;
     const hasCustomBackdrop = !!this.props.customBackdrop;
@@ -686,7 +704,11 @@ export class ReactNativeModal extends React.Component<ModalProps, State> {
     const backdropWrapper = (
       <animatable.View
         ref={ref => (this.backdropRef = ref)}
-        useNativeDriver={useNativeDriver}
+        useNativeDriver={
+          useNativeDriverForBackdrop !== undefined
+            ? useNativeDriverForBackdrop
+            : useNativeDriver
+        }
         style={[styles.backdrop, backdropComputedStyle]}>
         {hasCustomBackdrop && customBackdrop}
       </animatable.View>

@@ -1,3 +1,7 @@
+🚧 We're looking for maintainers and contributors! See [#414](https://github.com/react-native-community/react-native-modal/issues/414)
+
+<br />
+
 # react-native-modal
 
 [![npm version](https://badge.fury.io/js/react-native-modal.svg)](https://badge.fury.io/js/react-native-modal)
@@ -88,7 +92,6 @@ function ModalTester() {
     setModalVisible(!isModalVisible);
   };
 
-  render() {
     return (
       <View style={{flex: 1}}>
         <Button title="Show modal" onPress={toggleModal} />
@@ -102,7 +105,6 @@ function ModalTester() {
         </Modal>
       </View>
     );
-  }
 }
 
 export default ModalTester;
@@ -147,6 +149,7 @@ For a more complex example take a look at the `/example` directory.
 | swipeThreshold                 | number           | 100                            | Swiping threshold that when reached calls `onSwipeComplete`                                                                                |
 | swipeDirection                 | string or array  | null                           | Defines the direction where the modal can be swiped. Can be 'up', 'down', 'left, or 'right', or a combination of them like `['up','down']` |
 | useNativeDriver                | bool             | false                          | Defines if animations should use native driver                                                                                             |
+| useNativeDriverForBackdrop     | bool             | null                           | Defines if animations for backdrop should use native driver (to avoid flashing on android)                                                 |
 | hideModalContentWhileAnimating | bool             | false                          | Enhances the performance by hiding the modal content until the animations complete                                                         |
 | propagateSwipe                 | bool             | false                          | Allows swipe events to propagate to children components (eg a ScrollView inside a modal)                                                   |
 | style                          | any              | null                           | Style applied to the modal                                                                                                                 |
